@@ -5,7 +5,8 @@ using System.IO;
 using DlibDotNet;
 using DlibDotNet.Extensions;
 using Dlib = DlibDotNet.Dlib;
-
+using System.Collections.Generic;
+using System.Linq;
 
 
 
@@ -104,22 +105,71 @@ namespace CMP304_Iris_Classifier
             //Define Predictor
             var predictor = mlContext.Model.CreatePredictionEngine<InputDataImages, SpeciesPrediction>(model);
 
-            // Load Image and compute feature values
-            string str = "S121_003_03113227.png";
 
-            InputDataImages inputValues = GetFeaturesValuesFromImage(str);
+            // Create list to store paths for images 
+            List<string> Paths = Directory.GetFiles("TestingSetNeutral", "*.png").ToList();
+            //string[] NeutralImagesPaths = Directory.GetFiles("TestingSetNeutral", "*.png").ToArray();
+            Paths.AddRange(Directory.GetFiles("TestingSetFear", "*.png").ToList());
+            Paths.AddRange(Directory.GetFiles("TestingSetDisgust", "*.png").ToList());
+            Paths.AddRange(Directory.GetFiles("TestingSetAnger", "*.png").ToList());
+
+
+            // Create header for CSV file 
+            string Header = "Label, Score1, Score2, Score3, Score4, Path \n";
+            string HeaderImages = "Label, Score1, Score2, Score3, Score4, Path \n";
+            System.IO.File.WriteAllText(@"TestingResults.csv", Header);
+
+            // Load Image and compute feature values
+            //string str = "S116_006_02240709.png";
+
+            foreach (var str in Paths)
+            {
+                InputDataImages inputValues = GetFeaturesValuesFromImage(str);
+
+                var prediction = predictor.Predict(new InputDataImages()
+                {
+                    LeftEyebrow = inputValues.LeftEyebrow,
+                    RightEyebrow = inputValues.RightEyebrow,
+                    LeftLip = inputValues.LeftLip,
+                    RightLip = inputValues.RightLip,
+                    LipWidth = inputValues.LipWidth,
+                    LipHeight = inputValues.LipHeight
+
+                });
+
+                    
+
+                //Console.Write($"*** Prediction: {prediction.Species} ***");
+                //Console.Write($"*** Scores: {string.Join(" ", prediction.Scores)} ***");
+                //Console.Write($"*** Path: {str} ***");
+                //Console.WriteLine();
+
+
+
+                // Write resutls inside CSV file 
+                //using (System.IO.StreamWriter file = new System.IO.StreamWriter(@"TestingResults.csv", true))
+                //{
+                //    file.WriteLine(prediction.Species.ToString() + "," + prediction.Scores[0].ToString() 
+                //        + "," + prediction.Scores[1].ToString() + "," + prediction.Scores[2].ToString() + "," +
+                //        prediction.Scores[3].ToString() + "," + str.ToString());
+                //}
+
+
+            }
+
+            //InputDataImages inputValues = GetFeaturesValuesFromImage(str);
             // SeinputFilePathst up Dlib Face Detector
 
-            var prediction = predictor.Predict(new InputDataImages()
-            {
-                LeftEyebrow = inputValues.LeftEyebrow,
-                RightEyebrow = inputValues.RightEyebrow,
-                LeftLip = inputValues.LeftLip,
-                RightLip = inputValues.RightLip,
-                LipWidth = inputValues.LipWidth,
-                LipHeight = inputValues.LipHeight
+            //var prediction = predictor.Predict(new InputDataImages()
+            //{
+            //    LeftEyebrow = inputValues.LeftEyebrow,
+            //    RightEyebrow = inputValues.RightEyebrow,
+            //    LeftLip = inputValues.LeftLip,
+            //    RightLip = inputValues.RightLip,
+            //    LipWidth = inputValues.LipWidth,
+            //    LipHeight = inputValues.LipHeight
 
-            });
+            //});
 
 
 
@@ -131,8 +181,8 @@ namespace CMP304_Iris_Classifier
 
             //Console.WriteLine($"* MicroAccuracy: {TestMetrics.MicroAccuracy:0.###}");
 
-            Console.Write($"*** Prediction: {prediction.Species} ***");
-            Console.Write($"*** Scores: {string.Join(" ", prediction.Scores)} ***");
+            //Console.Write($"*** Prediction: {prediction.Species} ***");
+            //Console.Write($"*** Scores: {string.Join(" ", prediction.Scores)} ***");
 
 
 
@@ -233,7 +283,7 @@ namespace CMP304_Iris_Classifier
                     returnClass.LeftLip = LeftLipSum;
                     returnClass.RightLip = RightLipSum;
                     returnClass.LipWidth = (float)LipWidth;
-                    returnClass.RightLip = (float)LipHeight;
+                    returnClass.LipHeight = (float)LipHeight;
 
 
                     // export the modified image
