@@ -116,8 +116,9 @@ namespace CMP304_Iris_Classifier
 
             // Create header for CSV file 
             string Header = "Label, Score1, Score2, Score3, Score4, Path \n";
-            string HeaderImages = "Label, Score1, Score2, Score3, Score4, Path \n";
+            string HeaderImages = "Label, LeftEyebrow, RightEyebrow, LeftLip, RightLip, LipWidth, LipHeight \n";
             System.IO.File.WriteAllText(@"TestingResults.csv", Header);
+            System.IO.File.WriteAllText(@"TestingFeatureVectorValues.csv", HeaderImages);
 
             // Load Image and compute feature values
             //string str = "S116_006_02240709.png";
@@ -126,18 +127,17 @@ namespace CMP304_Iris_Classifier
             {
                 InputDataImages inputValues = GetFeaturesValuesFromImage(str);
 
-                var prediction = predictor.Predict(new InputDataImages()
-                {
-                    LeftEyebrow = inputValues.LeftEyebrow,
-                    RightEyebrow = inputValues.RightEyebrow,
-                    LeftLip = inputValues.LeftLip,
-                    RightLip = inputValues.RightLip,
-                    LipWidth = inputValues.LipWidth,
-                    LipHeight = inputValues.LipHeight
 
-                });
+                //var prediction = predictor.Predict(new InputDataImages()
+                //{
+                //    LeftEyebrow = inputValues.LeftEyebrow,
+                //    RightEyebrow = inputValues.RightEyebrow,
+                //    LeftLip = inputValues.LeftLip,
+                //    RightLip = inputValues.RightLip,
+                //    LipWidth = inputValues.LipWidth,
+                //    LipHeight = inputValues.LipHeight
 
-                    
+                //});
 
                 //Console.Write($"*** Prediction: {prediction.Species} ***");
                 //Console.Write($"*** Scores: {string.Join(" ", prediction.Scores)} ***");
@@ -145,18 +145,38 @@ namespace CMP304_Iris_Classifier
                 //Console.WriteLine();
 
 
+            }
 
-                // Write resutls inside CSV file 
-                //using (System.IO.StreamWriter file = new System.IO.StreamWriter(@"TestingResults.csv", true))
-                //{
-                //    file.WriteLine(prediction.Species.ToString() + "," + prediction.Scores[0].ToString() 
-                //        + "," + prediction.Scores[1].ToString() + "," + prediction.Scores[2].ToString() + "," +
-                //        prediction.Scores[3].ToString() + "," + str.ToString());
-                //}
+            List<InputDataImages> TestingFeatureVectorValues = ReadCSVFile("TestingFeatureVectorValues.csv");
+
+
+            foreach (var Input in TestingFeatureVectorValues)
+            {
+
+                var prediction = predictor.Predict(new InputDataImages()
+                {
+                    LeftEyebrow = Input.LeftEyebrow,
+                    RightEyebrow = Input.RightEyebrow,
+                    LeftLip = Input.LeftLip,
+                    RightLip = Input.RightLip,
+                    LipWidth = Input.LipWidth,
+                    LipHeight = Input.LipHeight
+
+                });
+
+
+                //Write resutls inside CSV file
+                using (System.IO.StreamWriter file = new System.IO.StreamWriter(@"TestingResults.csv", true))
+                {
+                    file.WriteLine(prediction.Species.ToString() + "," + prediction.Scores[0].ToString()
+                        + "," + prediction.Scores[1].ToString() + "," + prediction.Scores[2].ToString() + "," +
+                        prediction.Scores[3].ToString() /*+ "," + str.ToString()*/);
+                }
+
+
 
 
             }
-
             //InputDataImages inputValues = GetFeaturesValuesFromImage(str);
             // SeinputFilePathst up Dlib Face Detector
 
@@ -174,7 +194,8 @@ namespace CMP304_Iris_Classifier
 
 
 
-            // THIS IS JUST FOR GETTING THE MICROACCURACY, IT DOESN'T DO PREDICTION
+            // THIS IS JUST FOR GETTING THE MICROACCURACY
+
 
             //var TestDataView = mlContext.Data.LoadFromTextFile<InputDataImages>("iris_dataset.csv", hasHeader: true, separatorChar: ',');
             //var TestMetrics = mlContext.MulticlassClassification.Evaluate(model.Transform(dataView));
@@ -187,6 +208,36 @@ namespace CMP304_Iris_Classifier
 
 
         }
+
+        static List<InputDataImages> ReadCSVFile(string path)
+        {
+            using (var reader = new StreamReader(@path))
+            {
+                List<InputDataImages> listA = new List<InputDataImages>();
+                //List<string> listB = new List<string>();
+
+                while (!reader.EndOfStream)
+                {
+                    var line = reader.ReadLine();
+                    var values = line.Split(';');
+                    InputDataImages inputClass = new InputDataImages();
+
+                    inputClass.LeftEyebrow = float.Parse(values[1], System.Globalization.CultureInfo.InvariantCulture);
+                    inputClass.RightEyebrow = float.Parse(values[2], System.Globalization.CultureInfo.InvariantCulture);
+                    inputClass.LeftLip = float.Parse(values[3], System.Globalization.CultureInfo.InvariantCulture);
+                    inputClass.RightLip = float.Parse(values[4], System.Globalization.CultureInfo.InvariantCulture);
+                    inputClass.LipWidth = float.Parse(values[5], System.Globalization.CultureInfo.InvariantCulture);
+                    inputClass.LipHeight = float.Parse(values[6], System.Globalization.CultureInfo.InvariantCulture);
+
+                    listA.Add(inputClass);
+
+                }
+
+                return listA;
+            }
+        }
+
+
 
         private static InputDataImages GetFeaturesValuesFromImage(string str)
         {
@@ -291,7 +342,15 @@ namespace CMP304_Iris_Classifier
                     Dlib.SaveJpeg(img, filePath);
                 }
             }
-            return returnClass;
+
+            using (System.IO.StreamWriter file = new System.IO.StreamWriter(@"TestingFeatureVectorValues.csv", true))
+            {
+                string temp = "   ";
+                file.WriteLine(temp + "," + returnClass.LeftEyebrow.ToString() + "," + returnClass.RightEyebrow.ToString()
+                    + "," + returnClass.LeftLip.ToString() + "," + returnClass.RightLip.ToString() + "," + returnClass.LipWidth.ToString()
+                    + "," + returnClass.LipHeight.ToString());
+            }
+                return returnClass;
 
         }
 
