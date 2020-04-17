@@ -51,7 +51,7 @@ namespace CMP304_Iris_Classifier
         public float RightLip { get; set; }
 
         [LoadColumn(5)]
-        public float LipWidth  { get; set; }
+        public float LipWidth { get; set; }
         [LoadColumn(6)]
         public float LipHeight { get; set; }
 
@@ -87,7 +87,7 @@ namespace CMP304_Iris_Classifier
 
             // Defining the models pipeline
             var FeatureVectorName = "Features";
-            var LabelColumnName = "Labels";
+            var LabelColumnName = "Label";
 
             var pipeline = mlContext.Transforms.
                 Conversion.MapValueToKey(inputColumnName: "Label", outputColumnName: LabelColumnName)
@@ -107,11 +107,11 @@ namespace CMP304_Iris_Classifier
 
 
             // Create list to store paths for images 
-            List<string> Paths = Directory.GetFiles("TestingSetNeutral", "*.png").ToList();
+            List<string> Paths = Directory.GetFiles("Neutral", "*.png").ToList();
             //string[] NeutralImagesPaths = Directory.GetFiles("TestingSetNeutral", "*.png").ToArray();
-            Paths.AddRange(Directory.GetFiles("TestingSetFear", "*.png").ToList());
-            Paths.AddRange(Directory.GetFiles("TestingSetDisgust", "*.png").ToList());
-            Paths.AddRange(Directory.GetFiles("TestingSetAnger", "*.png").ToList());
+            Paths.AddRange(Directory.GetFiles("Fear", "*.png").ToList());
+            Paths.AddRange(Directory.GetFiles("Disgust", "*.png").ToList());
+            Paths.AddRange(Directory.GetFiles("Anger", "*.png").ToList());
 
 
             // Create header for CSV file 
@@ -126,7 +126,7 @@ namespace CMP304_Iris_Classifier
             foreach (var str in Paths)
             {
                 InputDataImages inputValues = GetFeaturesValuesFromImage(str);
-
+                //compute label from parent's directory name
 
                 //var prediction = predictor.Predict(new InputDataImages()
                 //{
@@ -170,7 +170,7 @@ namespace CMP304_Iris_Classifier
                 {
                     file.WriteLine(prediction.Species.ToString() + "," + prediction.Scores[0].ToString()
                         + "," + prediction.Scores[1].ToString() + "," + prediction.Scores[2].ToString() + "," +
-                        prediction.Scores[3].ToString() /*+ "," + str.ToString()*/);
+                        prediction.Scores[3].ToString() + "," + Input.Label.ToString());
                 }
 
 
@@ -197,10 +197,14 @@ namespace CMP304_Iris_Classifier
             // THIS IS JUST FOR GETTING THE MICROACCURACY
 
 
-            //var TestDataView = mlContext.Data.LoadFromTextFile<InputDataImages>("iris_dataset.csv", hasHeader: true, separatorChar: ',');
-            //var TestMetrics = mlContext.MulticlassClassification.Evaluate(model.Transform(dataView));
+            var TestDataView = mlContext.Data.LoadFromTextFile<InputDataImages>("TestingFeatureVectorValues.csv", hasHeader: true, separatorChar: ',');
+            var TestMetrics = mlContext.MulticlassClassification.Evaluate(model.Transform(dataView));
 
-            //Console.WriteLine($"* MicroAccuracy: {TestMetrics.MicroAccuracy:0.###}");
+            Console.WriteLine($"* Metrics for Multi-class Classification model - Test Data"); 
+            Console.WriteLine($"* MicroAccuracy:    {TestMetrics.MicroAccuracy:0.###}"); 
+            Console.WriteLine($"* MacroAccuracy:    {TestMetrics.MacroAccuracy:0.###}"); 
+            Console.WriteLine($"* LogLoss:          {TestMetrics.LogLoss:#.###}"); 
+            Console.WriteLine($"* LogLossReduction: {TestMetrics.LogLossReduction:#.###}");
 
             //Console.Write($"*** Prediction: {prediction.Species} ***");
             //Console.Write($"*** Scores: {string.Join(" ", prediction.Scores)} ***");
@@ -209,19 +213,20 @@ namespace CMP304_Iris_Classifier
 
         }
 
-        static List<InputDataImages> ReadCSVFile(string path)
+            static List<InputDataImages> ReadCSVFile(string path)
         {
             using (var reader = new StreamReader(@path))
             {
                 List<InputDataImages> listA = new List<InputDataImages>();
                 //List<string> listB = new List<string>();
-
+                reader.ReadLine();
                 while (!reader.EndOfStream)
                 {
                     var line = reader.ReadLine();
-                    var values = line.Split(';');
+                    var values = line.Split(',');
                     InputDataImages inputClass = new InputDataImages();
 
+                    inputClass.Label = values[0].ToString();
                     inputClass.LeftEyebrow = float.Parse(values[1], System.Globalization.CultureInfo.InvariantCulture);
                     inputClass.RightEyebrow = float.Parse(values[2], System.Globalization.CultureInfo.InvariantCulture);
                     inputClass.LeftLip = float.Parse(values[3], System.Globalization.CultureInfo.InvariantCulture);
@@ -345,12 +350,15 @@ namespace CMP304_Iris_Classifier
 
             using (System.IO.StreamWriter file = new System.IO.StreamWriter(@"TestingFeatureVectorValues.csv", true))
             {
-                string temp = "   ";
-                file.WriteLine(temp + "," + returnClass.LeftEyebrow.ToString() + "," + returnClass.RightEyebrow.ToString()
+                DirectoryInfo dr = new DirectoryInfo(str);
+                //Console.WriteLine(dr.Parent.Name.ToString());
+                string ParentFolderName = dr.Parent.Name.ToString();
+
+                file.WriteLine(ParentFolderName + "," + returnClass.LeftEyebrow.ToString() + "," + returnClass.RightEyebrow.ToString()
                     + "," + returnClass.LeftLip.ToString() + "," + returnClass.RightLip.ToString() + "," + returnClass.LipWidth.ToString()
                     + "," + returnClass.LipHeight.ToString());
             }
-                return returnClass;
+            return returnClass;
 
         }
 
